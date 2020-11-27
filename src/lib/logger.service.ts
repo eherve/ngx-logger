@@ -164,8 +164,6 @@ export class NGXLogger {
       return;
     }
 
-    const logLevelString = Levels[level];
-
     message = typeof message === 'function' ? message() : message;
     message = NGXLoggerUtils.prepareMessage(message);
 
@@ -193,8 +191,7 @@ export class NGXLogger {
 
       if (isLog2Server) {
         // make sure the stack gets sent to the server
-        message = message instanceof Error ? message.stack : message;
-        logObject.message = message;
+        logObject.message = logObject.message instanceof Error ? logObject.message.stack : logObject.message;
 
         const headers = this._customHttpHeaders || new HttpHeaders();
         headers.set('Content-Type', 'application/json');
@@ -210,7 +207,7 @@ export class NGXLogger {
           // I don't think we should do anything on success
         },
           (error: HttpErrorResponse) => {
-            this._log(NgxLoggerLevel.ERROR, `FAILED TO LOG ON SERVER: ${message}`, [error], false);
+            this._log(NgxLoggerLevel.ERROR, `FAILED TO LOG ON SERVER: ${logObject.message}`, [error], false);
           }
         );
       }
@@ -218,10 +215,10 @@ export class NGXLogger {
 
       // if no message or the log level is less than the environ
       if (isLogLevelEnabled && !config.disableConsoleLogging) {
-        const metaString = NGXLoggerUtils.prepareMetaString(timestamp, logLevelString,
-          callerDetails.fileName, callerDetails.lineNumber.toString());
+        const metaString = NGXLoggerUtils.prepareMetaString(logObject.timestamp, Levels[logObject.level],
+          logObject.fileName, logObject.lineNumber);
 
-        return this._logFunc(level, metaString, message, additional);
+        return this._logFunc(logObject.level, metaString, logObject.message, logObject.additional);
       }
     });
   }
